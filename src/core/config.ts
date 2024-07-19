@@ -82,7 +82,7 @@ export const config = {
         downloadUrl:
             process.env.LOCAL_DOWNLOAD_URL ||
             process.env.DOWNLOAD_URL ||
-            'http://127.0.0.1:3000/download',
+            'http://154.23.181.76:3000/download',
         // public static download spacename.
         public: '/download',
     },
