@@ -30,7 +30,7 @@ export const config = {
     // Config for database, only support mysql.
     db: {
         username: process.env.RDS_USERNAME || 'root',
-        password: process.env.RDS_PASSWORD || 'password',
+        password: process.env.RDS_PASSWORD || 'jianxia9009',
         database: process.env.RDS_DATABASE || 'codepush',
         host: process.env.RDS_HOST || '127.0.0.1',
         port: toNumber(process.env.RDS_PORT, 3306),
@@ -89,7 +89,7 @@ export const config = {
     jwt: {
         // Recommended: 63 random alpha-numeric characters
         // Generate using: https://www.grc.com/passwords.htm
-        tokenSecret: process.env.TOKEN_SECRET || 'INSERT_RANDOM_TOKEN_KEY',
+        tokenSecret: process.env.TOKEN_SECRET || 'gjNuzBrFCtPDPlRqHOOTXgRbw7ghQrhPHkObmIL1bMdH52fSCI9iFp83c1Zg17B',
     },
     common: {
         // determine whether new account registrations are allowed

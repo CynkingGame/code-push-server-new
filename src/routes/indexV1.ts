@@ -2,13 +2,16 @@ import express from 'express';
 import { AppError } from '../core/app-error';
 import { Req } from '../core/middleware';
 import { clientManager } from '../core/services/client-manager';
+import IP2Region from 'ip2region';
+import { Logger } from 'kv-logger';
 
 // routes for latest code push client
 export const indexV1Router = express.Router();
+let queryIp2Region = new IP2Region ();
 
 indexV1Router.get(
     '/update_check',
-    (
+    async (
         req: Req<
             void,
             void,
@@ -35,6 +38,7 @@ indexV1Router.get(
             package_hash: packageHash,
             client_unique_id: clientUniqueId,
         } = query;
+
         clientManager
             .updateCheckFromCache(
                 deploymentKey,
@@ -44,8 +48,17 @@ indexV1Router.get(
                 clientUniqueId,
                 logger,
             )
-            .then((rs) => {
+            .then(async (rs) => {
                 // 灰度检测
+
+                logger.info (`request from ${req.ip}`);
+                let ipInfo = await queryIp2Region.search (req.ip);
+                logger.info (`${ipInfo.city}, ${ipInfo.country}, ${ipInfo.isp}, ${ipInfo.province}`);
+                if (false) { // conditional gray
+                    rs.isAvailable = false;
+                    return rs;
+                }
+
                 return clientManager
                     .chosenMan(rs.packageId, rs.rollout, clientUniqueId)
                     .then((data) => {
