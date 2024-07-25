@@ -2,16 +2,15 @@ import express from 'express';
 import { AppError } from '../core/app-error';
 import { Req } from '../core/middleware';
 import { clientManager } from '../core/services/client-manager';
-import IP2Region from 'ip2region';
 import { Logger } from 'kv-logger';
+import fetch from 'node-fetch';
 
 // routes for latest code push client
 export const indexV1Router = express.Router();
-let queryIp2Region = new IP2Region ();
 
 indexV1Router.get(
     '/update_check',
-    async (
+    (
         req: Req<
             void,
             void,
@@ -50,22 +49,31 @@ indexV1Router.get(
             )
             .then(async (rs) => {
                 // 灰度检测
+                logger.info(`request from ${req.ip}`);
 
-                logger.info (`request from ${req.ip}`);
-                let ipInfo = await queryIp2Region.search (req.ip);
-                logger.info (`${ipInfo.city}, ${ipInfo.country}, ${ipInfo.isp}, ${ipInfo.province}`);
-                if (false) { // conditional gray
-                    rs.isAvailable = false;
-                    return rs;
-                }
-
-                return clientManager
-                    .chosenMan(rs.packageId, rs.rollout, clientUniqueId)
-                    .then((data) => {
-                        if (!data) {
+                fetch(`https://pro.ip-api.com/json/${req.ip}?key=ABzi1Br8z9nYCRu`)
+                    .then(response => response.json())
+                    .then(regInfo => {
+                        logger.info(`IP Region: ${JSON.stringify(regInfo)}`);
+                        if (regInfo.countryCode !== 'BR') {
                             rs.isAvailable = false;
                             return rs;
                         }
+
+                        return clientManager
+                            .chosenMan(rs.packageId, rs.rollout, clientUniqueId)
+                            .then((data) => {
+                                if (!data) {
+                                    rs.isAvailable = false;
+                                    return rs;
+                                }
+                                return rs;
+                            });
+
+                    })
+                    .catch(error => {
+                        logger.error(`Error fetching IP information: ${error}`);
+                        rs.isAvailable = false;
                         return rs;
                     });
             })
