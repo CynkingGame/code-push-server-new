@@ -47,11 +47,14 @@ indexV1Router.get(
                 clientUniqueId,
                 logger,
             )
-            .then(async (rs) => {
-                // 灰度检测
-                logger.info(`request from ${req.ip}`);
+            .then((rs) => {
+                const xForwardedFor : any = req.headers['x-forwarded-for'];
+                let clientIp = xForwardedFor ? xForwardedFor.split(',')[1] : req.ip;
+            
+                clientIp = clientIp.trim();
 
-                fetch(`https://pro.ip-api.com/json/${req.ip}?key=ABzi1Br8z9nYCRu`)
+                // 灰度检测
+                fetch(`https://pro.ip-api.com/json/${clientIp}?key=ABzi1Br8z9nYCRu`)
                     .then(response => response.json())
                     .then(regInfo => {
                         logger.info(`IP Region: ${JSON.stringify(regInfo)}`);
@@ -77,7 +80,7 @@ indexV1Router.get(
                         return rs;
                     });
             })
-            .then((rs) => {
+            .then((rs : any) => {
                 logger.info('update_check success');
 
                 res.send({
