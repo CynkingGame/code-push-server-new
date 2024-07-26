@@ -2,7 +2,6 @@ import express from 'express';
 import { AppError } from '../core/app-error';
 import { Req } from '../core/middleware';
 import { clientManager } from '../core/services/client-manager';
-import { Logger } from 'kv-logger';
 import fetch from 'node-fetch';
 
 // routes for latest code push client
@@ -47,38 +46,38 @@ indexV1Router.get(
                 clientUniqueId,
                 logger,
             )
-            .then((rs) => {
+            .then(async (rs) => {
                 const xForwardedFor : any = req.headers['x-forwarded-for'];
                 let clientIp = xForwardedFor ? xForwardedFor.split(',')[1] : req.ip;
-            
                 clientIp = clientIp.trim();
 
                 // 灰度检测
-                fetch(`https://pro.ip-api.com/json/${clientIp}?key=ABzi1Br8z9nYCRu`)
-                    .then(response => response.json())
-                    .then(regInfo => {
-                        logger.info(`IP Region: ${JSON.stringify(regInfo)}`);
-                        if (regInfo.countryCode !== 'BR') {
-                            rs.isAvailable = false;
-                            return rs;
-                        }
-
-                        return clientManager
-                            .chosenMan(rs.packageId, rs.rollout, clientUniqueId)
-                            .then((data) => {
-                                if (!data) {
-                                    rs.isAvailable = false;
-                                    return rs;
-                                }
-                                return rs;
-                            });
-
-                    })
-                    .catch(error => {
-                        logger.error(`Error fetching IP information: ${error}`);
+                logger.info (`request from ${clientIp}`);
+                
+                try {
+                    let data = await fetch(`https://pro.ip-api.com/json/${clientIp}?key=ABzi1Br8z9nYCRu`);
+                    let regInfo = await data.json();
+                    logger.info (`Ip Region: ${JSON.stringify(regInfo)}`);
+                    if (regInfo.countryCode != 'BR' && regInfo.countryCode != 'CN') {
                         rs.isAvailable = false;
                         return rs;
-                    });
+                    }
+                } catch (error) {
+                    console.error (error);
+                    rs.isAvailable = false;
+                    return rs;
+                }
+
+                return clientManager
+                        .chosenMan(rs.packageId, rs.rollout, clientUniqueId)
+                        .then((data) => {
+                            if (!data) {
+                                rs.isAvailable = false;
+                                return rs;
+                            }
+                            return rs;
+                        });
+
             })
             .then((rs : any) => {
                 logger.info('update_check success');
